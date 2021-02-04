@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Просмотр категорий {{ shop_name }}{% endblock %}
+{% block content %}
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+
+      <h2>Просмотр категорий {{ shop_name }}</h2>
+
+      <div class="table-responsive">
+        <table class="table table-striped table-sm">
+
+
+          <tbody>
+          {% for c in categories %}
+            <tr>
+              <td>#</td>
+              <td><a href='{{ c["cat_link"] }}' target="_blank">{{ c["cat_link"] }}</td>
+              <td></td>
+              <td>{{ c["cat_name"] }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </main>
+<h1></h1>
+{% endblock %}
