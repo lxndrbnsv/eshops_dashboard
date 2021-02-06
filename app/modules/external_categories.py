@@ -5,6 +5,7 @@ import pymysql.cursors
 
 class GetExternalCategories:
     def __init__(self):
+
         connection = pymysql.connect(
             host="downlo04.mysql.tools",
             user="downlo04_parseditems",
@@ -22,19 +23,32 @@ class GetExternalCategories:
                 cursor.execute(sql)
                 results = cursor.fetchall()
 
+            categories = []
+            for result in results:
+                with connection.cursor() as cursor:
+                    try:
+                        select_query = (
+                            "SELECT name, name_ru FROM shop_category WHERE"
+                            " id = %s"
+                        )
+                        cursor.execute(select_query, result["parent_id"])
+                        parent_data = cursor.fetchone()
+                        if parent_data is None:
+                            parent_data = dict(name=None, name_ru=None)
+                    except Exception:
+                        parent_data = dict(name=None, name_ru=None)
+                result_data = dict(
+                    name=result["name"],
+                    name_ru=result["name_ru"],
+                    cat_id=result["id"],
+                    parent_id=result["parent_id"],
+                    parent_name=parent_data["name"],
+                    parent_name_ru=parent_data["name_ru"]
+                )
+                categories.append(result_data)
+
         finally:
             connection.close()
-
-        categories = []
-
-        for result in results:
-            result_data = dict(
-                name=result["name"],
-                name_ru=result["name_ru"],
-                cat_id=result["id"],
-                parent_id=result["parent_id"]
-            )
-            categories.append(result_data)
 
         self.categories = categories
 

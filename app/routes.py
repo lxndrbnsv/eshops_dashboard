@@ -90,7 +90,7 @@ def autocomplete():
     categories = LoadExternalCategories().categories
     for c in categories:
         category_names.append(
-            f'{c["name"]} ({c["name_ru"]})'
+            f'{c["name"]} ({c["name_ru"]}) Parent: {c["parent_name"]} ({c["parent_name_ru"]})'
         )
 
     return Response(json.dumps(category_names, ensure_ascii=False), mimetype="application/json")
