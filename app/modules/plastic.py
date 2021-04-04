@@ -31,7 +31,7 @@ class AssignCategory:
                         s.service_id = s_id["id"]
                         s.host_service_name = s_id["service"]
                         try:
-                            s.description = old_value.split("(", 1)[1].rsplit(")", 1)
+                            s.description = old_value.split("(", 1)[1].rsplit(")", 1)[0]
                         except IndexError:
                             s.description = None
 
