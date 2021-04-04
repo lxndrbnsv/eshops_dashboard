@@ -30,4 +30,9 @@ class AssignCategory:
                         s.service = new_value
                         s.service_id = s_id["id"]
                         s.host_service_name = s_id["service"]
+                        try:
+                            s.description = old_value.split("(", 1)[1].rsplit(")", 1)
+                        except IndexError:
+                            s.description = None
+
                         db.session.commit()
