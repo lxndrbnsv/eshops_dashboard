@@ -13,3 +13,9 @@ class EditCategoryForm(FlaskForm):
     cat_name = StringField("Категория:")
     cat_link = StringField()
     submit = SubmitField("Подтвердить")
+
+
+class EditService(FlaskForm):
+    cat_name = StringField("Услуга:")
+    cat_to_change = StringField()
+    submit = SubmitField("Подтвердить")

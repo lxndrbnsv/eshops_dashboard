@@ -32,3 +32,13 @@ class ScraperCategory(db.Model):
 
     def __repr__(self):
         return "<Category {}>".format(self.cat_link)
+
+
+class PlasticServices(db.Model):
+    id = db.Column(db.Integer, index=True, primary_key=True)
+    service = db.Column(db.String(512))
+    service_id = db.Column(db.Integer)
+    host_service_name = db.Column(db.String(512))
+
+    def __repr__(self):
+        return "<Service {}>".format(self.service)

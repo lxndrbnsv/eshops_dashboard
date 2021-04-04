@@ -1,8 +1,9 @@
 import json
 
 from app import app, db
-from app.models import User, ScraperCategory
-from app.forms import LoginForm, EditCategoryForm
+from app.modules.plastic import ReadHostServices, ReadServicesDict, AssignCategory
+from app.models import User, ScraperCategory, PlasticServices
+from app.forms import LoginForm, EditCategoryForm, EditService
 from app.modules.categories import LoadCategories, CompareCategories
 from app.modules.external_categories import GetExternalCategories, WriteExternalCategories, LoadExternalCategories
 from flask import send_file, render_template, redirect, url_for, jsonify, Response, request
@@ -82,8 +83,6 @@ def edit_categories(shop):
     )
 
 
-
-
 @app.route("/_autocomplete", methods=["GET"])
 def autocomplete():
     category_names = []
@@ -94,6 +93,18 @@ def autocomplete():
         )
 
     return Response(json.dumps(category_names, ensure_ascii=False), mimetype="application/json")
+
+
+@app.route("/_autocomplete_plastic", methods=["GET"])
+def autocomplete_plastic():
+    services_names = []
+    services = ReadHostServices().services
+    for s in services:
+        services_names.append(f'{s["service"]} ({s["type"]})')
+
+    return Response(
+        json.dumps(services_names, ensure_ascii=False), mimetype="application/json"
+    )
 
 
 @app.route("/raeder")
@@ -123,3 +134,38 @@ def logout():
 @app.route("/v1/images/<shop_id>/<image_name>")
 def send_picture_r(shop_id, image_name):
     return send_file(f"./files/pics/{shop_id}/{image_name}")
+
+
+@app.route("/plastic_surgery_categories", methods=["GET", "POST"])
+@login_required
+def plastic_surgery_categories():
+    page = request.args.get("page", 1, type=int)
+
+    services = PlasticServices.query.paginate(page, 25, False)
+    next_url = url_for('plastic_surgery_categories', page=services.next_num) \
+        if services.has_next else None
+    prev_url = url_for('plastic_surgery_categories', page=services.prev_num) \
+        if services.has_prev else None
+
+    form = EditService()
+
+    print(form.data)
+
+    if request.method == "POST":
+        AssignCategory(
+            old_value=form.data["cat_to_change"], new_value=form.data["cat_name"]
+        )
+
+    return render_template(
+        "plastic.html",
+        form=form,
+        services=services,
+        page=page,
+        next_url=next_url,
+        prev_url=prev_url
+    )
+
+
+@app.route("/beauty_categories", methods=["GET", "POST"])
+def beauty_categories():
+    return jsonify(status=None)
