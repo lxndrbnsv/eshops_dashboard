@@ -22,7 +22,7 @@ class AssignCategory:
             services_id = json.load(json_file)
 
         services = PlasticServices().query.all()
-
+        # T
         for s_id in services_id:
             if s_id["service"].strip() == new_value.split(" (", 1)[0].strip():
                 for s in services:
