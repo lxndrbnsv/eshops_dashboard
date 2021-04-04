@@ -2,7 +2,8 @@ import json
 
 from app import app, db
 from app.modules.plastic import ReadHostServices, ReadServicesDict, AssignCategory
-from app.models import User, ScraperCategory, PlasticServices
+from app.modules.beauty import ReadHostServicesBeauty, ReadServicesDictBeauty, AssignCategoryBeauty
+from app.models import User, ScraperCategory, PlasticServices, BeautyServices
 from app.forms import LoginForm, EditCategoryForm, EditService
 from app.modules.categories import LoadCategories, CompareCategories
 from app.modules.external_categories import GetExternalCategories, WriteExternalCategories, LoadExternalCategories
@@ -107,6 +108,18 @@ def autocomplete_plastic():
     )
 
 
+@app.route("/_autocomplete_beauty", methods=["GET"])
+def autocomplete_beauty():
+    services_names = []
+    services = ReadHostServicesBeauty().services
+    for s in services:
+        services_names.append(f'{s["service"]}')
+
+    return Response(
+        json.dumps(services_names, ensure_ascii=False), mimetype="application/json"
+    )
+
+
 @app.route("/raeder")
 @login_required
 def raeder_page():
@@ -167,5 +180,30 @@ def plastic_surgery_categories():
 
 
 @app.route("/beauty_categories", methods=["GET", "POST"])
+@login_required
 def beauty_categories():
-    return jsonify(status=None)
+    page = request.args.get("page", 1, type=int)
+
+    services = BeautyServices.query.paginate(page, 25, False)
+    next_url = url_for('beauty_categories', page=services.next_num) \
+        if services.has_next else None
+    prev_url = url_for('beauty_categories', page=services.prev_num) \
+        if services.has_prev else None
+
+    form = EditService()
+
+    print(form.data)
+
+    if request.method == "POST":
+        AssignCategoryBeauty(
+            old_value=form.data["cat_to_change"], new_value=form.data["cat_name"]
+        )
+
+    return render_template(
+        "beauty.html",
+        form=form,
+        services=services,
+        page=page,
+        next_url=next_url,
+        prev_url=prev_url
+    )

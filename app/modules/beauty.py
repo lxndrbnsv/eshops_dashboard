@@ -1,27 +1,27 @@
 import json
 
 from app import db
-from app.models import PlasticServices
+from app.models import BeautyServices
 
 
-class ReadHostServices:
+class ReadHostServicesBeauty:
     def __init__(self):
-        with open("./data/surgery/services_id.json") as json_file:
+        with open("./data/beauty/services_id.json") as json_file:
             self.services = json.load(json_file)
 
 
-class ReadServicesDict:
+class ReadServicesDictBeauty:
     def __init__(self):
-        with open("./data/surgery/services.json") as json_file:
+        with open("./data/beauty/services.json") as json_file:
             self.services = json.load(json_file)
 
 
-class AssignCategory:
+class AssignCategoryBeauty:
     def __init__(self, old_value, new_value):
-        with open("./data/surgery/services_id.json") as json_file:
+        with open("./data/beauty/services_id.json") as json_file:
             services_id = json.load(json_file)
 
-        services = PlasticServices().query.all()
+        services = BeautyServices().query.all()
 
         for s_id in services_id:
             if s_id["service"].strip() == new_value.split(" (", 1)[0].strip():

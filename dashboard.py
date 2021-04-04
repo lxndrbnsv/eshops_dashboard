@@ -1,5 +1,5 @@
 from app import app, db
-from app.models import User, ScraperCategory, PlasticServices
+from app.models import User, ScraperCategory, PlasticServices, BeautyServices
 
 
 @app.shell_context_processor
@@ -8,5 +8,6 @@ def make_shell_context():
         "db": db,
         "User": User,
         "ScraperCategory": ScraperCategory,
-        "PlasticServices": PlasticServices
+        "PlasticServices": PlasticServices,
+        "BeautyServices": BeautyServices
     }
