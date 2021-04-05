@@ -82,7 +82,7 @@ class ExportBeautyToJSON:
                     service=b.service,
                     id=b.id,
                     description=b.description,
-                    old_name=p.old_name
+                    old_name=b.old_name
                 )
             )
 
