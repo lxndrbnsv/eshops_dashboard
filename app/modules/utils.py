@@ -61,6 +61,7 @@ class ExportPlasticToJSON:
                     service=p.service,
                     id=p.id,
                     description=p.description,
+                    old_name=p.old_name
                 )
             )
 
@@ -81,6 +82,7 @@ class ExportBeautyToJSON:
                     service=b.service,
                     id=b.id,
                     description=b.description,
+                    old_name=p.old_name
                 )
             )
 
