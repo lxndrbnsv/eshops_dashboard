@@ -29,6 +29,7 @@ class AssignCategoryBeauty:
                     if s.service == old_value:
                         s.service = new_value
                         s.service_id = s_id["id"]
+                        s.old_name = old_value
                         s.host_service_name = s_id["service"]
                         try:
                             s.description = old_value.split("(", 1)[1].rsplit(")", 1)[0]
