@@ -1,7 +1,28 @@
 import json
 
 from app import db
-from app.models import PlasticServices, BeautyServices
+from app.models import PlasticServices, BeautyServices, ScraperCategory
+
+
+class ExtractServicesToJson:
+    def __init__(self):
+        cats_db = ScraperCategory.query.all()
+
+        shop_name = input("Shop: ")
+
+        cat_dicts = []
+
+        for cat_db in cats_db:
+            cat_dicts.append(
+                dict(
+                    cat=cat_db.cat_link,
+                    cat_id=cat_db.cat_id
+                )
+            )
+
+        data = json.dumps(cat_dicts, indent=2, ensure_ascii=False)
+        with open(f"./scrapers/{shop_name}/categories.json", "w+") as json_file:
+            json_file.write(data)
 
 
 class WriteServicesToDB:
