@@ -138,6 +138,12 @@ def tescoma_page():
     return render_template("tescoma.html", shop_name="tescoma")
 
 
+@app.route("/zara_home")
+@login_required
+def zara_home_page():
+    return render_template("zara_home.html", shop_name="zara_home")
+
+
 @app.route('/logout')
 def logout():
     logout_user()
