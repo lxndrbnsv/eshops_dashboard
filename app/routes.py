@@ -60,10 +60,11 @@ def view_categories(shop):
 @app.route("/edit_categories/<shop>", methods=["GET", "POST"])
 @login_required
 def edit_categories(shop):
+    print(request, flush=True)
     form = EditCategoryForm()
     cat_name = form.data["cat_name"]
     cat_link = form.data["cat_link"]
-    print(form.data)
+    print(form.data, flush=True)
 
     categories = LoadCategories(shop).categories
 
@@ -101,7 +102,7 @@ def autocomplete_plastic():
     services_names = []
     services = ReadHostServices().services
     for s in services:
-        services_names.append(f'{s["service"]} ({s["type"]})')
+        services_names.append(f'{s["service"]}')
 
     return Response(
         json.dumps(services_names, ensure_ascii=False), mimetype="application/json"
@@ -158,6 +159,7 @@ def send_picture_r(shop_id, image_name):
 @app.route("/plastic_surgery_categories", methods=["GET", "POST"])
 @login_required
 def plastic_surgery_categories():
+    print(request, flush=True)
     page = request.args.get("page", 1, type=int)
 
     services = PlasticServices.query.paginate(page, 25, False)
@@ -168,9 +170,10 @@ def plastic_surgery_categories():
 
     form = EditService()
 
-    print(form.data)
+    print(form.data, flush=True)
 
     if request.method == "POST":
+        print(request, flush=True)
         AssignCategory(
             old_value=form.data["cat_to_change"], new_value=form.data["cat_name"]
         )
@@ -198,7 +201,7 @@ def beauty_categories():
 
     form = EditService()
 
-    print(form.data)
+    print(form.data, flush=True)
 
     if request.method == "POST":
         AssignCategoryBeauty(

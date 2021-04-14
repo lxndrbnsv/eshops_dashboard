@@ -23,8 +23,12 @@ class AssignCategory:
 
         services = PlasticServices().query.all()
 
+        print("Old: ", old_value, flush=True)
+        print("New: ", new_value, flush=True)
+
         for s_id in services_id:
-            if s_id["service"].strip() == new_value.split(" (", 1)[0].strip():
+            if s_id["service"].strip() == new_value.strip():
+                print("OK", flush=True)
                 for s in services:
                     if s.service == old_value:
                         s.service = new_value
