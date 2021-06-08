@@ -1,10 +1,11 @@
+import os
 import json
+import datetime
+import subprocess
 
 from app import app, db
-from app.modules.plastic import ReadHostServices, ReadServicesDict, AssignCategory
-from app.modules.beauty import ReadHostServicesBeauty, ReadServicesDictBeauty, AssignCategoryBeauty
-from app.models import User, ScraperCategory, PlasticServices, BeautyServices
-from app.forms import LoginForm, EditCategoryForm, EditService
+from app.models import User, ScraperCategory
+from app.forms import LoginForm, EditCategoryForm
 from app.modules.categories import LoadCategories, CompareCategories
 from app.modules.external_categories import GetExternalCategories, WriteExternalCategories, LoadExternalCategories
 from flask import send_file, render_template, redirect, url_for, jsonify, Response, request
@@ -97,30 +98,6 @@ def autocomplete():
     return Response(json.dumps(category_names, ensure_ascii=False), mimetype="application/json")
 
 
-@app.route("/_autocomplete_plastic", methods=["GET"])
-def autocomplete_plastic():
-    services_names = []
-    services = ReadHostServices().services
-    for s in services:
-        services_names.append(f'{s["service"]}')
-
-    return Response(
-        json.dumps(services_names, ensure_ascii=False), mimetype="application/json"
-    )
-
-
-@app.route("/_autocomplete_beauty", methods=["GET"])
-def autocomplete_beauty():
-    services_names = []
-    services = ReadHostServicesBeauty().services
-    for s in services:
-        services_names.append(f'{s["service"]}')
-
-    return Response(
-        json.dumps(services_names, ensure_ascii=False), mimetype="application/json"
-    )
-
-
 @app.route("/raeder")
 @login_required
 def raeder_page():
@@ -145,6 +122,12 @@ def zara_home_page():
     return render_template("zara_home.html", shop_name="zara_home")
 
 
+@app.route("/zara")
+@login_required
+def zara_page():
+    return render_template("zara.html", shop_name="zara")
+
+
 @app.route('/logout')
 def logout():
     logout_user()
@@ -156,63 +139,36 @@ def send_picture_r(shop_id, image_name):
     return send_file(f"./files/pics/{shop_id}/{image_name}")
 
 
-@app.route("/plastic_surgery_categories", methods=["GET", "POST"])
+@app.route("/start_scraper", methods=["GET"])
 @login_required
-def plastic_surgery_categories():
+def start_scraper():
+    print(datetime.datetime.now(), flush=True)
     print(request, flush=True)
-    page = request.args.get("page", 1, type=int)
 
-    services = PlasticServices.query.paginate(page, 25, False)
-    next_url = url_for('plastic_surgery_categories', page=services.next_num) \
-        if services.has_next else None
-    prev_url = url_for('plastic_surgery_categories', page=services.prev_num) \
-        if services.has_prev else None
+    shop = request.args.get("shop")
+    update = int(request.args.get("update"))
 
-    form = EditService()
+    if shop is None:
+        return jsonify(status="error", msg="shop argument is None")
+    if update is None:
+        return jsonify(status="error", msg="update argument is None")
 
-    print(form.data, flush=True)
+    subprocess.Popen(f"python3 ./scrapers/{shop}/{shop}.py")
 
-    if request.method == "POST":
-        print(request, flush=True)
-        AssignCategory(
-            old_value=form.data["cat_to_change"], new_value=form.data["cat_name"]
-        )
-
-    return render_template(
-        "plastic.html",
-        form=form,
-        services=services,
-        page=page,
-        next_url=next_url,
-        prev_url=prev_url
-    )
+    return jsonify(status="success", msg=f"{shop} has been launched")
 
 
-@app.route("/beauty_categories", methods=["GET", "POST"])
+@app.route("/stop_scraper", methods=["GET"])
 @login_required
-def beauty_categories():
-    page = request.args.get("page", 1, type=int)
+def stop_scraper():
+    print(datetime.datetime.now(), flush=True)
+    print(request)
 
-    services = BeautyServices.query.paginate(page, 25, False)
-    next_url = url_for('beauty_categories', page=services.next_num) \
-        if services.has_next else None
-    prev_url = url_for('beauty_categories', page=services.prev_num) \
-        if services.has_prev else None
+    shop = request.args.get("shop")
 
-    form = EditService()
+    if shop is None:
+        return jsonify(status="error", msg="shop argument is None")
 
-    print(form.data, flush=True)
+    os.system(f"killall {shop}")
 
-    if request.method == "POST":
-        AssignCategoryBeauty(
-            old_value=form.data["cat_to_change"], new_value=form.data["cat_name"]
-        )
-
-    return render_template(
-        "beauty.html",
-        form=form,
-        services=services,
-        page=page,
-        next_url=next_url,
-        prev_url=prev_url
-    )
+    return jsonify(status="success", msg=f"{shop} has been stopped")

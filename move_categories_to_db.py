@@ -3,7 +3,8 @@ import json
 from app import db
 from app.models import ScraperCategory
 
-
+# TODO:  удалить все категории, у которых нет соответствия.
+# TODO:  брать категории для парсинга прямо из БД.
 while True:
     shop_name = input("Shop name: ")
 
