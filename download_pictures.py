@@ -1,9 +1,14 @@
+import sys
 import os
 import random
 import string
 
 import requests
 import pymysql
+
+
+sys.stdout = open("pic_logs.log", "w")
+sys.stderr = open("pic_logs.log", "w")
 
 
 def download_image(url, shop):
