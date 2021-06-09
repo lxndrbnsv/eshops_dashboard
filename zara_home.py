@@ -184,7 +184,7 @@ def get_product_data(product_item):
 
             char_num = 1
             ref_code = "".join(random.choice(digits) for __ in range(char_num))
-            while ref_code in existing_codes:
+            while int(ref_code) in existing_codes:
                 char_num = char_num + 1
                 ref_code = "".join(random.choice(digits) for __ in range(char_num))
 
@@ -412,7 +412,6 @@ def get_product_data(product_item):
             description = get_description()
             sizes = get_sizes()
             materials = get_materials()
-            print(materials)
 
             results_dict = dict(
                 cat_id=cat,
@@ -492,7 +491,6 @@ def get_product_data(product_item):
 
     print(f"{get_current_time()} Product data has been collected!", flush=True)
     print("--- --- ---", flush=True)
-    print(json.dumps(results, indent=4))
     return results
 
 
