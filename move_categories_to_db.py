@@ -6,9 +6,11 @@ from app.models import ScraperCategory
 # TODO:  удалить все категории, у которых нет соответствия.
 # TODO:  брать категории для парсинга прямо из БД.
 while True:
-    shop_name = input("Shop name: ")
+    # shop_name = input("Shop name: ")
+    shop_name = "febest"
 
-    file_path = f"./scrapers/{shop_name}/categories.json"
+    # file_path = f"./scrapers/{shop_name}/categories.json"
+    file_path = f"./febest_categories.json"
 
     try:
         with open(file_path, "r") as json_file:

@@ -128,6 +128,12 @@ def zara_page():
     return render_template("zara.html", shop_name="zara")
 
 
+@app.route("/febest")
+@login_required
+def febest_page():
+    return render_template("febest.html", shop_name="febest")
+
+
 @app.route('/logout')
 def logout():
     logout_user()
