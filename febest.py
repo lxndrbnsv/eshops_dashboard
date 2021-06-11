@@ -167,7 +167,8 @@ def get_product_data():
     bs = BeautifulSoup(html, "html.parser")
 
     if available() is True:
-        ref = generate_product_ref()
+        # ref = generate_product_ref()
+        ref = 0
         name = get_name()
         art = get_art()
         price = get_price()
@@ -279,6 +280,9 @@ if __name__ == "__main__":
                     results.append(product_data)
             except Exception:
                 traceback.print_exc()
-        write_db()
+        try:
+            write_db()
+        except Exception:
+            traceback.print_exc()
 
         print("--- --- ---", flush=True)
