@@ -166,8 +166,6 @@ def get_product_data():
     html = requests.get(url).text
     bs = BeautifulSoup(html, "html.parser")
 
-    prods = []
-
     if available() is True:
         ref = generate_product_ref()
         name = get_name()
@@ -192,71 +190,14 @@ def get_product_data():
             weight=weight
         )
 
-        prods.append(results_dict)
-
-        connection = pymysql.connect(
-            host=cfg.db_data["host"],
-            user=cfg.db_data["user"],
-            password=cfg.db_data["password"],
-            db=cfg.db_data["db"],
-            charset="utf8mb4",
-            cursorclass=pymysql.cursors.DictCursor,
-        )
-
-        try:
-            print(results_dict["name"], flush=True)
-            ts = datetime.datetime.now()
-
-            shop_id = 6
-            url = results_dict["url"]
-            product_ref = results_dict["ref"]
-            parsed = ts
-            updated = ts
-            name = results_dict["name"]
-            available = 1
-            brand = "febest"
-            art = results_dict["art"]
-            current_price = results_dict["price"]
-            currency = "EUR"
-            description = results_dict["description"]
-            material = results_dict["materials"]
-            dimensions = str(results_dict["sizes"])
-            images = ", ".join(results_dict["pictures"])
-            img_main = results_dict["pictures"][0]
-            img_additional = ", ".join(results_dict["pictures"])
-            category_id = results_dict["cat_id"]
-            color = results_dict["color"]
-            weight = int(float(results_dict["weight"]) * 1000)
-
-            with connection.cursor() as cursor:
-                insert_query = "INSERT INTO parsed_products_test (" \
-                                "shop_id, url, product_ref, parsed, updated, name," \
-                                " available, brand, art, current_price, currency," \
-                                " description, material, dimensions," \
-                                " images, img_main, img_additional, category, " \
-                                "color, weight)" \
-                                " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s," \
-                                " %s, %s, %s, %s, %s, %s, %s, %s, %s);"
-                insert_values = (
-                    shop_id, url, product_ref, parsed, updated, name, available,
-                    brand, art, current_price, currency, description, material,
-                    dimensions, images, img_main, img_additional, category_id,
-                    color, weight
-                )
-                cursor.execute(insert_query, insert_values)
-
-                connection.commit()
-        except IndexError:
-            pass
-
-        connection.close()
+        return results_dict
 
     else:
         print(get_current_time(), "The item is out of stock.")
 
     print("--- --- ---")
 
-    return prods
+    return None
 
 
 def write_db():
@@ -323,6 +264,7 @@ if __name__ == "__main__":
     categories = get_categories_from_db()
 
     for category in categories:
+        results = []
         cat_id = category["cat_id"]
         print(
             get_current_time(), f"Gathering products in {category['cat']}", flush=True
@@ -332,8 +274,11 @@ if __name__ == "__main__":
         for product in products:
             try:
                 print("Gathering data:", product, flush=True)
-                get_product_data()
+                product_data = get_product_data()
+                if product_data is not None:
+                    results.append(product_data)
             except Exception:
                 traceback.print_exc()
+        write_db()
 
         print("--- --- ---", flush=True)
