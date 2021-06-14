@@ -32,3 +32,11 @@ class ScraperCategory(db.Model):
 
     def __repr__(self):
         return "<Category {}>".format(self.cat_link)
+
+
+class RefCode(db.Model):
+    id = db.Column(db.Integer, index=True, primary_key=True)
+    ref_code = db.Column(db.Integer)
+
+    def __repr__(self):
+        return "<RefCode {}>".format(self.ref_code)

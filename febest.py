@@ -11,7 +11,8 @@ import setproctitle as spt
 import requests
 from bs4 import BeautifulSoup
 
-from app.models import ScraperCategory
+from app import db
+from app.models import ScraperCategory, RefCode
 
 import scrapers_config as cfg
 
@@ -23,6 +24,43 @@ sys.stderr = open("logs_febest.log", "w")
 
 def get_current_time():
     return datetime.datetime.now()
+
+
+def fetch_all_ref_codes():
+    """Сбор всех существующих реф-кодов из БД."""
+    print(get_current_time(), "Fetching ref codes from main database.", flush=True)
+    ref_connection = pymysql.connect(
+        host=cfg.db_data["host"],
+        user=cfg.db_data["user"],
+        password=cfg.db_data["password"],
+        db=cfg.db_data["db"],
+        charset="utf8mb4",
+        cursorclass=pymysql.cursors.DictCursor,
+    )
+    with ref_connection.cursor() as ref_cursor:
+        select_query = "SELECT product_ref FROM parsed_products;"
+        ref_cursor.execute(select_query)
+        db_data = ref_cursor.fetchall()
+    ref_connection.close()
+
+    fetched_refs = []
+
+    for ref_dict in db_data:
+        if ref_dict["product_ref"] not in fetched_refs:
+            fetched_refs.append(ref_dict["product_ref"])
+
+    ref_codes_list = []
+
+    all_ref_codes = RefCode.query.all()
+    for a in all_ref_codes:
+        ref_codes_list.append(a.ref_code)
+    for f in sorted(fetched_refs):
+        if f not in ref_codes_list:
+            ref_code = RefCode()
+            ref_code.ref_code = f
+            db.session.add(ref_code)
+    db.session.commit()
+    print(get_current_time(), "Done", flush=True)
 
 
 def get_categories_from_db():
@@ -47,9 +85,11 @@ def get_cat_products():
 
         item_divs = bs.find_all("div", {"class": "item-inner"})
         for item_div in item_divs:
-            product_link = item_div.find(
-                "div", {"class": "products clearfix"}
-            ).find("a").attrs["href"]
+            product_link = (
+                item_div.find("div", {"class": "products clearfix"})
+                .find("a")
+                .attrs["href"]
+            )
             if product_link not in product_links:
                 product_links.append(product_link)
 
@@ -67,35 +107,12 @@ def get_cat_products():
 def get_product_data():
     def available():
         availability_p = bs.find("p", {"class": "availability"})
-        if "In stock" in availability_p.get_text():
+        if "На складе" in availability_p.get_text():
             return True
         else:
             return False
 
     def generate_product_ref():
-        def get_ref_codes_from_db():
-            ref_connection = pymysql.connect(
-                host=cfg.db_data["host"],
-                user=cfg.db_data["user"],
-                password=cfg.db_data["password"],
-                db=cfg.db_data["db"],
-                charset="utf8mb4",
-                cursorclass=pymysql.cursors.DictCursor,
-            )
-            with ref_connection.cursor() as ref_cursor:
-                select_query = "SELECT product_ref FROM parsed_products;"
-                ref_cursor.execute(select_query)
-                db_data = ref_cursor.fetchall()
-            ref_connection.close()
-
-            fetched_refs = []
-
-            for ref_dict in db_data:
-                if ref_dict["product_ref"] not in fetched_refs:
-                    fetched_refs.append(ref_dict["product_ref"])
-
-            return sorted(fetched_refs)
-
         def ref_in_list(lst, item):
             low = 0
             high = len(lst) - 1
@@ -115,15 +132,24 @@ def get_product_data():
             digits = string.digits
 
             char_num = 1
-            ref_code = "".join(random.choice(digits) for __ in range(char_num))
-            while ref_in_list(existing_codes, int(ref_code)) is True:
+            generated_code = "".join(random.choice(digits) for __ in range(char_num))
+            while ref_in_list(sorted(existing_codes), int(generated_code)) is True:
                 char_num = char_num + 1
-                ref_code = "".join(random.choice(digits) for __ in range(char_num))
+                generated_code = "".join(
+                    random.choice(digits) for __ in range(char_num)
+                )
 
-            return int(ref_code)
+            return int(generated_code)
 
-        existing_codes = get_ref_codes_from_db()
+        existing_codes = []
+        for r in RefCode.query.all():
+            existing_codes.append(r.ref_code)
         value = generate()
+
+        ref_code = RefCode()
+        ref_code.ref_code = value
+        db.session.add(ref_code)
+        db.session.commit()
 
         return value
 
@@ -132,13 +158,13 @@ def get_product_data():
 
     def get_art():
         art_div = bs.find("div", {"class": "articulbox"}).get_text()
-        return art_div.replace("Code: ", "").strip()
+        return art_div.replace("Артикул: ", "").strip()
 
     def get_price():
-        price_span = bs.find(
-            "span", {"class": "regular-price"}
-        ).find("span", {"class": "price"})
-        return float(price_span.get_text().replace("€", ""))
+        price_span = bs.find("span", {"class": "regular-price"}).find(
+            "span", {"class": "price"}
+        )
+        return float(price_span.get_text().replace("€", "").replace(",", "."))
 
     def get_pictures():
         images = []
@@ -152,11 +178,22 @@ def get_product_data():
 
     def get_cars():
         cars_list = []
-        compatibility_ul = bs.find("ul", {"class": "compatibility"})
-        for li in compatibility_ul.find_all("li"):
-            if li.get_text() not in cars_list:
-                cars_list.append(li.get_text())
-        return ";".join(cars_list)
+
+        oem_th = bs.find("th", text="OEM")
+        oem_list = oem_th.find_next_sibling("td").get_text().split(";", 1)
+
+        compatible_cars_ul = bs.find("ul", {"class": "compatibility"})
+        for li in compatible_cars_ul.find_all("li"):
+            if li.get_text() + "\n" not in cars_list:
+                cars_list.append(li.get_text() + "\n")
+
+        compatibility_text = (
+            "Совместимые OE/OEM и кросс-номера автозапчастей:\n"
+            + "\n".join(oem_list)
+            + "Совместимые автомобили:\n"
+            + "\n".join(cars_list)
+        )
+        return compatibility_text
 
     def get_weight():
         weight_th = bs.find("th", text="Weight")
@@ -167,8 +204,7 @@ def get_product_data():
     bs = BeautifulSoup(html, "html.parser")
 
     if available() is True:
-        # ref = generate_product_ref()
-        ref = 0
+        ref = generate_product_ref()
         name = get_name()
         art = get_art()
         price = get_price()
@@ -188,7 +224,7 @@ def get_product_data():
             description=description,
             sizes=None,
             materials=None,
-            weight=weight
+            weight=weight,
         )
 
         return results_dict
@@ -213,7 +249,6 @@ def write_db():
 
     for result in results:
         try:
-            print(result["name"], flush=True)
             ts = datetime.datetime.now()
 
             shop_id = 6
@@ -238,19 +273,37 @@ def write_db():
             weight = int(float(result["weight"]) * 1000)
 
             with connection.cursor() as cursor:
-                insert_query = "INSERT INTO parsed_products_test (" \
-                               "shop_id, url, product_ref, parsed, updated, name," \
-                               " available, brand, art, current_price, currency," \
-                               " description, material, dimensions," \
-                               " images, img_main, img_additional, category, " \
-                               "color, weight)" \
-                               " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s," \
-                               " %s, %s, %s, %s, %s, %s, %s, %s, %s);"
+                insert_query = (
+                    "INSERT INTO parsed_products_test ("
+                    "shop_id, url, product_ref, parsed, updated, name,"
+                    " available, brand, art, current_price, currency,"
+                    " description, material, dimensions,"
+                    " images, img_main, img_additional, category, "
+                    "color, weight)"
+                    " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,"
+                    " %s, %s, %s, %s, %s, %s, %s, %s, %s);"
+                )
                 insert_values = (
-                    shop_id, url, product_ref, parsed, updated, name, available,
-                    brand, art, current_price, currency, description, material,
-                    dimensions, images, img_main, img_additional, category_id,
-                    color, weight
+                    shop_id,
+                    url,
+                    product_ref,
+                    parsed,
+                    updated,
+                    name,
+                    available,
+                    brand,
+                    art,
+                    current_price,
+                    currency,
+                    description,
+                    material,
+                    dimensions,
+                    images,
+                    img_main,
+                    img_additional,
+                    category_id,
+                    color,
+                    weight,
                 )
                 cursor.execute(insert_query, insert_values)
 
@@ -262,6 +315,7 @@ def write_db():
 
 
 if __name__ == "__main__":
+    fetch_all_ref_codes()
     categories = get_categories_from_db()
 
     for category in categories:
