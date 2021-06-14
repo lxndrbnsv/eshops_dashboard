@@ -204,7 +204,8 @@ def get_product_data():
     bs = BeautifulSoup(html, "html.parser")
 
     if available() is True:
-        ref = generate_product_ref()
+        # ref = generate_product_ref() Использовать не будем, так как нет вариаций.
+        ref = None
         name = get_name()
         art = get_art()
         price = get_price()
@@ -274,7 +275,7 @@ def write_db():
 
             with connection.cursor() as cursor:
                 insert_query = (
-                    "INSERT INTO parsed_products_test ("
+                    "INSERT INTO parsed_products ("
                     "shop_id, url, product_ref, parsed, updated, name,"
                     " available, brand, art, current_price, currency,"
                     " description, material, dimensions,"
@@ -315,7 +316,7 @@ def write_db():
 
 
 if __name__ == "__main__":
-    fetch_all_ref_codes()
+    # fetch_all_ref_codes() Использовать не будем, так как нет вариаций.
     categories = get_categories_from_db()
 
     for category in categories:
