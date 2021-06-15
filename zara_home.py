@@ -514,7 +514,7 @@ def get_product_data(product_item):
                                " available, brand, art, current_price, currency," \
                                " description, material, dimensions," \
                                " images, img_main, img_additional, category, color)" \
-                               " VALUES (%s, ,%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s," \
+                               " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s," \
                                " %s, %s, %s, %s, %s, %s, %s);"
                 insert_values = (
                     shop_id, url, product_ref, parsed, updated, name, available,
@@ -536,6 +536,7 @@ def get_product_data(product_item):
 
 
 if __name__ == "__main__":
+    fetch_all_ref_codes()
     categories = get_categories_from_db()
     for category in categories:
         products = get_products(category)
