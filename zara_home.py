@@ -194,27 +194,13 @@ def get_product_data(product_item):
                 pass
 
     def generate_product_ref():
-        def ref_in_list(lst, item):
-            low = 0
-            high = len(lst) - 1
-
-            while low <= high:
-                mid = (low + high) // 2
-                guess = lst[mid]
-                if guess == item:
-                    return True
-                if guess > item:
-                    high = mid - 1
-                else:
-                    low = mid + 1
-            return False
 
         def generate():
             digits = string.digits
 
             char_num = 1
             generated_code = "".join(random.choice(digits) for __ in range(char_num))
-            while ref_in_list(sorted(existing_codes), int(generated_code)) is True:
+            while int(generated_code) in existing_codes:
                 char_num = char_num + 1
                 generated_code = "".join(
                     random.choice(digits) for __ in range(char_num)
