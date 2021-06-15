@@ -5,7 +5,8 @@ import random
 import traceback
 import datetime
 
-from app.models import ScraperCategory
+from app import db
+from app.models import ScraperCategory, RefCode
 
 import setproctitle as spt
 
@@ -36,6 +37,43 @@ sys.stderr = open("logs_zara_home.log", "w")
 
 def get_current_time():
     return datetime.datetime.now()
+
+
+def fetch_all_ref_codes():
+    """Сбор всех существующих реф-кодов из БД."""
+    print(get_current_time(), "Fetching ref codes from main database.", flush=True)
+    ref_connection = pymysql.connect(
+        host=cfg.db_data["host"],
+        user=cfg.db_data["user"],
+        password=cfg.db_data["password"],
+        db=cfg.db_data["db"],
+        charset="utf8mb4",
+        cursorclass=pymysql.cursors.DictCursor,
+    )
+    with ref_connection.cursor() as ref_cursor:
+        select_query = "SELECT product_ref FROM parsed_products;"
+        ref_cursor.execute(select_query)
+        db_data = ref_cursor.fetchall()
+    ref_connection.close()
+
+    fetched_refs = []
+
+    for ref_dict in db_data:
+        if ref_dict["product_ref"] not in fetched_refs:
+            fetched_refs.append(ref_dict["product_ref"])
+
+    ref_codes_list = []
+
+    all_ref_codes = RefCode.query.all()
+    for a in all_ref_codes:
+        ref_codes_list.append(a.ref_code)
+    for f in sorted(fetched_refs):
+        if f not in ref_codes_list:
+            ref_code = RefCode()
+            ref_code.ref_code = f
+            db.session.add(ref_code)
+    db.session.commit()
+    print(get_current_time(), "Done", flush=True)
 
 
 def get_categories_from_db():
@@ -156,42 +194,43 @@ def get_product_data(product_item):
                 pass
 
     def generate_product_ref():
-        def get_ref_codes_from_db():
-            ref_connection = pymysql.connect(
-                host=cfg.db_data["host"],
-                user=cfg.db_data["user"],
-                password=cfg.db_data["password"],
-                db=cfg.db_data["db"],
-                charset="utf8mb4",
-                cursorclass=pymysql.cursors.DictCursor,
-            )
-            with ref_connection.cursor() as ref_cursor:
-                select_query = "SELECT product_ref FROM parsed_products;"
-                ref_cursor.execute(select_query)
-                db_data = ref_cursor.fetchall()
-            ref_connection.close()
+        def ref_in_list(lst, item):
+            low = 0
+            high = len(lst) - 1
 
-            fetched_refs = []
-
-            for ref_dict in db_data:
-                if ref_dict["product_ref"] not in fetched_refs:
-                    fetched_refs.append(ref_dict["product_ref"])
-
-            return fetched_refs
+            while low <= high:
+                mid = (low + high) // 2
+                guess = lst[mid]
+                if guess == item:
+                    return True
+                if guess > item:
+                    high = mid - 1
+                else:
+                    low = mid + 1
+            return False
 
         def generate():
             digits = string.digits
 
             char_num = 1
-            ref_code = "".join(random.choice(digits) for __ in range(char_num))
-            while int(ref_code) in existing_codes:
+            generated_code = "".join(random.choice(digits) for __ in range(char_num))
+            while ref_in_list(sorted(existing_codes), int(generated_code)) is True:
                 char_num = char_num + 1
-                ref_code = "".join(random.choice(digits) for __ in range(char_num))
+                generated_code = "".join(
+                    random.choice(digits) for __ in range(char_num)
+                )
 
-            return int(ref_code)
+            return int(generated_code)
 
-        existing_codes = get_ref_codes_from_db()
+        existing_codes = []
+        for r in RefCode.query.all():
+            existing_codes.append(r.ref_code)
         value = generate()
+
+        ref_code = RefCode()
+        ref_code.ref_code = value
+        db.session.add(ref_code)
+        db.session.commit()
 
         return value
 
@@ -380,6 +419,7 @@ def get_product_data(product_item):
                 materials = get_materials()
 
                 results_dict = dict(
+                    url=url,
                     cat_id=cat,
                     ref=ref,
                     color=current_color,
@@ -414,6 +454,7 @@ def get_product_data(product_item):
             materials = get_materials()
 
             results_dict = dict(
+                url=url,
                 cat_id=cat,
                 ref=ref,
                 color=None,
@@ -469,14 +510,14 @@ def get_product_data(product_item):
 
             with connection.cursor() as cursor:
                 insert_query = "INSERT INTO parsed_products (" \
-                               "shop_id, product_ref, parsed, updated, name," \
+                               "shop_id, url, product_ref, parsed, updated, name," \
                                " available, brand, art, current_price, currency," \
                                " description, material, dimensions," \
                                " images, img_main, img_additional, category, color)" \
-                               " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s," \
+                               " VALUES (%s, ,%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s," \
                                " %s, %s, %s, %s, %s, %s, %s);"
                 insert_values = (
-                    shop_id, product_ref, parsed, updated, name, available,
+                    shop_id, url, product_ref, parsed, updated, name, available,
                     brand, art, current_price, currency, description, material,
                     dimensions, images, img_main, img_additional, cat_id,
                     color
