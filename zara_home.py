@@ -541,4 +541,7 @@ if __name__ == "__main__":
     for category in categories:
         products = get_products(category)
         for product in products:
-            product_data = get_product_data(product)
+            try:
+                product_data = get_product_data(product)
+            except Exception:
+                traceback.print_exc()
