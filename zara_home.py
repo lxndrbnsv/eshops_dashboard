@@ -67,7 +67,7 @@ def fetch_all_ref_codes():
     all_ref_codes = RefCode.query.all()
     for a in all_ref_codes:
         ref_codes_list.append(a.ref_code)
-    for f in sorted(fetched_refs):
+    for f in fetched_refs:
         if f not in ref_codes_list:
             ref_code = RefCode()
             ref_code.ref_code = f
